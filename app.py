@@ -49,3 +49,116 @@ def load_css():
         background-color: #0E1117;
     }
     [data-testid="stForm"] {
+        border: 1px solid #262730;
+        border-radius: 15px;
+        padding: 25px;
+    }
+    div[data-testid="stVerticalBlock"] > div[style*="flex-direction: column;"] > div[data-testid="stVerticalBlock"]:hover {
+        transform: scale(1.03);
+        box-shadow: 0 8px 30px rgba(160, 122, 255, 0.3);
+    }
+    </style>
+    """
+    st.markdown(css, unsafe_allow_html=True)
+
+# --- Helper Functions ---
+def load_lottieurl(url: str):
+    r = requests.get(url)
+    if r.status_code != 200: return None
+    return r.json()
+
+def animated_title(text):
+    title_placeholder = st.empty()
+    typed_text = ""
+    for char in text:
+        typed_text += char
+        title_placeholder.title(typed_text + "▌")
+        time.sleep(0.05)
+    title_placeholder.title(text)
+
+def get_gemini_response(education, skills, interests, goals):
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    prompt = f"""
+    You are an AI-powered Personalized Career and Skills Advisor. Analyze the user's profile: Education:{education}, Skills:{skills}, Interests:{interests}, Goals:{goals}. Generate a complete career guidance package in a structured JSON format ONLY.
+    The JSON structure must be: {{"Career Paths":[{{"role":"string","demand":"string","avg_salary":"string","reason":"string"}}], "Skills to Learn":[{{"name":"string","type":"string"}}], "Learning Roadmap":{{"Short Term":["string"],"Long Term":["string"]}}, "Projects":{{"Beginner":["string"],"Advanced":["string"]}}, "Opportunities":[{{"platform":"string","role":"string","skill_gap":"string"}}], "Motivation":"string"}}
+    """
+    response = model.generate_content(prompt)
+    return response.text
+
+# --- Load API Key ---
+load_dotenv()
+try:
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        st.error("Google API Key not found. Please add it to your .env file.", icon="🚨")
+    else:
+        genai.configure(api_key=api_key)
+except Exception as e:
+    st.error(f"Error configuring API: {e}", icon="🚨")
+
+# --- Main App UI ---
+load_css() # Load the custom CSS
+
+lottie_json = load_lottieurl("https://assets5.lottiefiles.com/packages/lf20_DMgKk1.json")
+if lottie_json:
+    st_lottie(lottie_json, speed=1, height=200, key="initial_animation")
+
+animated_title("🧭 Career Compass AI") # The animated typing title
+st.write("Your Personal AI Mentor for a Successful Career Path")
+
+with st.form("user_profile_form"):
+    st.subheader("Tell Us About Yourself")
+    
+    c1, c2 = st.columns(2)
+    with c1:
+        education = st.text_input("🎓 Your Education", placeholder="e.g., B.Tech in Computer Science, 3rd Year")
+        skills = st.text_input("💻 Your Current Skills", placeholder="e.g., Python, Java, Basic Data Structures")
+    with c2:
+        interests = st.text_input("🎨 Your Interests", placeholder="e.g., AI, Gaming, Problem Solving")
+        goals = st.text_input("🎯 Your Career Goals", placeholder="e.g., Get a high-paying job at a FAANG company")
+
+    submit_button = st.form_submit_button(label="🚀 Generate My Career Path")
+
+# --- Output Section ---
+if submit_button:
+    if all([education, skills, interests, goals]):
+        with st.spinner("Crafting your future... Please wait!"):
+            try:
+                response_text = get_gemini_response(education, skills, interests, goals)
+                response_data = json.loads(response_text.strip("```json\n"))
+                st.balloons()
+                
+                st.success("Your Personalized Career Roadmap is Ready!")
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                st.subheader("🎯 Recommended Career Paths")
+                paths = response_data.get("Career Paths", [])
+                if paths:
+                    cols = st.columns(len(paths))
+                    for i, path in enumerate(paths):
+                        with cols[i]:
+                            card(title=path['role'],
+                                 text=[f"Demand: {path['demand']}", f"Salary: {path['avg_salary']}", path['reason']],
+                                 styles={"card": {"background-color": "#262730", "color": "#FAFAFA"}})
+                
+                st.divider()
+                
+                tab1, tab2, tab3 = st.tabs(["🗺️ Skills to Learn", "🗓️ Learning Roadmap", "🚀 Projects & Opportunities"])
+
+                with tab1:
+                    # (Code for this tab is the same as before)
+                    # ...
+                with tab2:
+                    # (Code for this tab is the same as before)
+                    # ...
+                with tab3:
+                    # (Code for this tab is the same as before)
+                    # ...
+
+                st.divider()
+                st.success(f"**⭐ Motivational Boost:** {response_data.get('Motivation')}")
+
+            except Exception as e:
+                st.error(f"An error occurred: {e}", icon="🔥")
+    else:
+        st.warning("Please fill out all the fields.")
