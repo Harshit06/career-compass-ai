@@ -17,7 +17,8 @@ st.set_page_config(
 
 # --- Custom CSS for a "Cool & Animated" UI ---
 def load_css():
-    css = """
+    # Using a raw string (r"..."") to prevent character escaping issues
+    css = r"""
     <style>
     /* Import a professional font from Google Fonts */
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
@@ -75,6 +76,11 @@ def animated_title(text):
         title_placeholder.title(typed_text + "▌")
         time.sleep(0.05)
     title_placeholder.title(text)
+
+def display_skills(skill_list, skill_type):
+    st.markdown(f"**{skill_type} Skills**")
+    badges = "".join([f'<span style="display: inline-block; background-color: #262730; color: #FAFAFA; padding: 5px 12px; margin: 3px; border-radius: 15px; border: 1px solid #A07AFF;">{skill["name"]}</span>' for skill in skill_list])
+    st.markdown(badges, unsafe_allow_html=True)
 
 def get_gemini_response(education, skills, interests, goals):
     model = genai.GenerativeModel('gemini-1.5-flash-latest')
@@ -146,14 +152,36 @@ if submit_button:
                 tab1, tab2, tab3 = st.tabs(["🗺️ Skills to Learn", "🗓️ Learning Roadmap", "🚀 Projects & Opportunities"])
 
                 with tab1:
-                    # (Code for this tab is the same as before)
-                    # ...
+                    st.header("Skills to Learn")
+                    tech_skills = [s for s in response_data.get("Skills to Learn", []) if s['type'] == 'Technical']
+                    soft_skills = [s for s in response_data.get("Skills to Learn", []) if s['type'] != 'Technical']
+                    
+                    display_skills(tech_skills, "Technical")
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    display_skills(soft_skills, "Soft")
+
                 with tab2:
-                    # (Code for this tab is the same as before)
-                    # ...
+                    st.header("Your Learning Roadmap")
+                    roadmap = response_data.get("Learning Roadmap", {})
+                    with st.container(border=True):
+                        st.markdown("**Short-Term (Next 3-6 Months):**")
+                        for item in roadmap.get("Short Term", []): st.checkbox(item, key=f"st_{item}")
+                    with st.container(border=True):
+                        st.markdown("**Long-Term (6 Months - 2 Years):**")
+                        for item in roadmap.get("Long Term", []): st.checkbox(item, key=f"lt_{item}")
+                
                 with tab3:
-                    # (Code for this tab is the same as before)
-                    # ...
+                    st.header("Projects to Build Your Portfolio")
+                    projects = response_data.get("Projects", {})
+                    with st.expander("**Beginner Projects**"):
+                        for proj in projects.get("Beginner", []): st.markdown(f"- {proj}")
+                    with st.expander("**Advanced Project**"):
+                        st.markdown(f"- {projects.get('Advanced', [''])[0]}")
+                    
+                    st.divider()
+                    st.header("Job & Internship Opportunities")
+                    for opp in response_data.get("Opportunities", []):
+                        st.info(f"**Role:** {opp['role']} on **{opp['platform']}**\n\n**Skill Gap to Fill:** {opp['skill_gap']}")
 
                 st.divider()
                 st.success(f"**⭐ Motivational Boost:** {response_data.get('Motivation')}")
