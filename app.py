@@ -14,14 +14,13 @@ st.set_page_config(
 )
 
 # 2. API Configuration via Secrets
-# In Streamlit Cloud: Settings -> Secrets -> GOOGLE_API_KEY = "your_key"
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 else:
     st.error("Missing API Key! Please add GOOGLE_API_KEY to your Streamlit Secrets.")
     st.stop()
 
-# 3. UI Styling
+# 3. Custom CSS for Animation
 def add_animated_background():
     st.markdown("""
         <style>
@@ -35,9 +34,16 @@ def add_animated_background():
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
+        .main-card {
+            background-color: rgba(38, 39, 48, 0.7);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid #4B3978;
+        }
         </style>
     """, unsafe_allow_html=True)
 
+# 4. Helper Functions
 def load_lottieurl(url: str):
     try:
         r = requests.get(url)
@@ -45,9 +51,8 @@ def load_lottieurl(url: str):
     except:
         return None
 
-# 4. Core AI Logic
 def get_gemini_response(education, skills, interests, goals):
-    # Set to 2.5 as requested
+    # Using the current stable 1.5 Flash model
     model = genai.GenerativeModel('gemini-1.5-flash')
     
     prompt = f"""
@@ -57,88 +62,122 @@ def get_gemini_response(education, skills, interests, goals):
     - Interests: {interests}
     - Career Goals: {goals}
 
-    Return ONLY a valid JSON object. No intro text, no backticks.
-    Format:
+    Return ONLY a valid JSON object. Do not include markdown formatting or backticks.
     {{
-      "Career Paths": [{{"role": "Title", "demand": "High", "avg_salary": "Range", "reason": "Why"}}],
-      "Skills to Learn": [{{"name": "Skill", "type": "Technical/Soft", "resources": ["Source"]}}],
-      "Learning Roadmap": {{"Short Term": ["Step 1"], "Long Term": ["Step 2"]}},
-      "Projects": {{"Beginner": ["P1"], "Advanced": ["P2"]}},
-      "Opportunities": [{{"platform": "Name", "role": "Type", "skill_gap": "Gap"}}],
-      "Motivation": "Quote"
+      "Career Paths": [
+        {{"role": "Title", "demand": "High/Medium", "avg_salary": "Range", "reason": "Why"}}
+      ],
+      "Skills to Learn": [
+        {{"name": "Skill Name", "type": "Technical/Soft", "resources": ["Link/Source"]}}
+      ],
+      "Learning Roadmap": {{
+        "Short Term": ["Step 1", "Step 2"],
+        "Long Term": ["Step 1", "Step 2"]
+      }},
+      "Projects": {{
+        "Beginner": ["Project 1"],
+        "Advanced": ["Project 2"]
+      }},
+      "Opportunities": [
+        {{"platform": "Name", "role": "Type", "skill_gap": "What to learn"}}
+      ],
+      "Motivation": "Inspirational Quote"
     }}
     """
     
     response = model.generate_content(prompt)
     text = response.text.strip()
     
-    # Handle case where model returns markdown blocks
-    if "json" in text:
+    # Robust JSON Cleaning
+    if text.startswith("json"):
         text = text.split("json")[1].split("")[0].strip()
-    elif "" in text:
+    elif text.startswith(""):
         text = text.split("")[1].split("")[0].strip()
         
     return text
 
-# --- App Layout ---
+# --- App Execution ---
 add_animated_background()
 
-lottie_json = load_lottieurl("https://assets5.lottiefiles.com/packages/lf20_DMgKk1.json")
+# Header Section
+lottie_url = "https://assets5.lottiefiles.com/packages/lf20_DMgKk1.json"
+lottie_json = load_lottieurl(lottie_url)
 if lottie_json:
-    st_lottie(lottie_json, height=180, key="main_anim")
+    st_lottie(lottie_json, height=200, key="header_anim")
 
 st.title("🧭 Career Compass AI")
-st.write("Navigating your professional future with Gemini 2.5")
+st.markdown("---")
 
+# Input Form
 with st.container():
-    c1, c2 = st.columns(2)
-    with c1:
-        education = st.text_input("🎓 Your Education", placeholder="e.g. B.Tech Computer Science")
-        skills = st.text_input("💻 Current Skills", placeholder="e.g. Java, Python, SQL")
-    with c2:
-        interests = st.text_input("🎨 Your Interests", placeholder="e.g. App Dev, AI, Design")
-        goals = st.text_input("🎯 Your Goals", placeholder="e.g. Work at a Tech Giant")
+    st.subheader("Your Profile Details")
+    col1, col2 = st.columns(2)
+    with col1:
+        education = st.text_input("🎓 Education", placeholder="e.g. B.Tech CS, Final Year")
+        skills = st.text_input("💻 Current Skills", placeholder="e.g. Python, SQL, Git")
+    with col2:
+        interests = st.text_input("🎨 Interests", placeholder="e.g. Machine Learning, Finance")
+        goals = st.text_input("🎯 Career Goals", placeholder="e.g. Data Scientist at a Top Firm")
 
-if st.button("🚀 Generate My Career Path", use_container_width=True):
+# Action Button
+if st.button("🚀 Generate My Career Roadmap", use_container_width=True):
     if all([education, skills, interests, goals]):
-        with st.spinner("Processing your path..."):
+        with st.spinner("Our AI is navigating the best paths for you..."):
             try:
-                res_text = get_gemini_response(education, skills, interests, goals)
-                data = json.loads(res_text)
+                response_json = get_gemini_response(education, skills, interests, goals)
+                data = json.loads(response_json)
                 
                 st.balloons()
-                
-                # --- Career Display ---
-                st.header("🎯 Recommended Paths")
+                st.success("Your personalized roadmap is ready!")
+
+                # --- Section 1: Career Paths ---
+                st.header("🎯 Recommended Careers")
                 paths = data.get("Career Paths", [])
                 cols = st.columns(len(paths) if 0 < len(paths) <= 3 else 3)
-                for i, path in enumerate(paths):
-                    with cols[i % 3]:
+                
+                for idx, path in enumerate(paths):
+                    with cols[idx % 3]:
                         card(
                             title=path['role'],
-                            text=f"{path['demand']} Demand | {path['avg_salary']}",
-                            styles={"card": {"background-color": "#1E1E26", "color": "white"}}
+                            text=f"🔥 Demand: {path['demand']} | 💰 {path['avg_salary']}",
+                            styles={"card": {"background-color": "#1E1E26", "color": "white", "border-radius": "10px"}}
                         )
-                
-                # --- Roadmap Tabs ---
-                tab1, tab2 = st.tabs(["📚 Roadmap", "🏗️ Projects"])
+                        with st.expander("Detailed Insight"):
+                            st.write(path['reason'])
+
+                # --- Section 2: Skills & Roadmap ---
+                st.divider()
+                tab1, tab2, tab3 = st.tabs(["📚 Learning Plan", "🏗️ Projects", "💼 Opportunities"])
+
                 with tab1:
-                    st.subheader("Your Learning Journey")
-                    st.write("*Phase 1 (Short Term):*")
-                    for item in data['Learning Roadmap']['Short Term']: st.write(f"🔹 {item}")
-                    st.write("*Phase 2 (Long Term):*")
-                    for item in data['Learning Roadmap']['Long Term']: st.write(f"🚀 {item}")
-                
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        st.markdown("### 🛠️ Skills to Acquire")
+                        for s in data.get("Skills to Learn", []):
+                            st.write(f"*{s['name']}* - {s['type']}")
+                    with c2:
+                        st.markdown("### 🗺️ Timeline")
+                        st.markdown("*Next 6 Months:*")
+                        for step in data['Learning Roadmap']['Short Term']: st.write(f"✅ {step}")
+                        st.markdown("*Longer Horizon:*")
+                        for step in data['Learning Roadmap']['Long Term']: st.write(f"🚀 {step}")
+
                 with tab2:
-                    st.subheader("Hands-on Projects")
-                    st.info(f"*Try these first:* {', '.join(data['Projects']['Beginner'])}")
-                    st.success(f"*Final Boss Level:* {', '.join(data['Projects']['Advanced'])}")
+                    st.markdown("### 🚀 Portfolio Builders")
+                    st.info(f"*Beginner Projects:* {', '.join(data['Projects']['Beginner'])}")
+                    st.success(f"*Advanced Projects:* {', '.join(data['Projects']['Advanced'])}")
+
+                with tab3:
+                    st.markdown("### 🌍 Job Market & Platforms")
+                    for opp in data.get("Opportunities", []):
+                        st.write(f"📍 *{opp['role']}* on *{opp['platform']}*")
+                        st.caption(f"Bridge the gap: {opp['skill_gap']}")
 
                 st.divider()
-                st.write(f"✨ *Inspiration:* {data.get('Motivation')}")
+                st.info(f"💡 *Motivational Boost:* {data.get('Motivation')}")
 
             except Exception as e:
-                st.error("Model version 2.5 might not be active or JSON was malformed. Try using 1.5 if this persists.")
+                st.error("Error generating roadmap. Please try again or refine your inputs.")
+                # st.exception(e) # Uncomment for debugging
     else:
-        st.warning("Please fill in all details!")
-
+        st.warning("Please fill out all the fields above!")
