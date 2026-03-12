@@ -37,11 +37,11 @@ def add_animated_background():
 # Load environment variables and configure the API
 load_dotenv()
 try:
-    api_key = os.getenv("GOOGLE_API_KEY")
+    api_key = os.getenv("AIzaSyCM1LGIu8-NBIADK7oppZqlzMEr9imeO0k")
     if not api_key:
         st.error("Google API Key not found. Please add it to your .env file.", icon="🚨")
     else:
-        genai.configure(api_key=api_key)
+        genai.configure(api_key="AIzaSyCM1LGIu8-NBIADK7oppZqlzMEr9imeO0k")
 except Exception as e:
     st.error(f"Error configuring API: {e}", icon="🚨")
 
@@ -171,5 +171,6 @@ if submit_button:
 
     else:
         st.warning("Please fill out all the fields to generate your roadmap.", icon="⚠️")
+
 
 
