@@ -37,7 +37,7 @@ def add_animated_background():
 # Load environment variables and configure the API
 load_dotenv()
 try:
-    api_key = os.getenv("AIzaSyCM1LGIu8-NBIADK7oppZqlzMEr9imeO0k")
+    api_key = "AIzaSyCM1LGIu8-NBIADK7oppZqlzMEr9imeO0k"
     if not api_key:
         st.error("Google API Key not found. Please add it to your .env file.", icon="🚨")
     else:
@@ -171,6 +171,7 @@ if submit_button:
 
     else:
         st.warning("Please fill out all the fields to generate your roadmap.", icon="⚠️")
+
 
 
 
