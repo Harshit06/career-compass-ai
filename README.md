@@ -11,8 +11,7 @@
 
 ## 🚀 Live Demo & Video
 
-* **Try the Live App:** **https://career-compass-ai-yljtm5xusur36uesnuy7ta.streamlit.app/#bcc6ff5c **
-* **Watch the 3-Minute Video Pitch:** **[https://youtu.be/37j5secal8A?si=0ePc3OaJXJSA6l9t](https://youtu.be/37j5secal8A?si=0ePc3OaJXJSA6l9t)**
+* **Try the Live App:** **https://career-compass-ai-tsf52i4zggstcunspxvjsy.streamlit.app/**
 
 ## 🎯 The Problem
 For millions of students in India, the career landscape is a maze of overwhelming choices and unclear paths. There's a critical disconnect between academic learning and the dynamic skills demanded by the industry. Career Compass AI was built to solve this problem by making elite-level career guidance accessible to all.
