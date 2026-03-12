@@ -11,7 +11,7 @@
 
 ## 🚀 Live Demo & Video
 
-* **Try the Live App:** **[https://career-compass-ai-x5ntzjohyrabf2lezuqxsb.streamlit.app/](https://career-compass-ai-x5ntzjohyrabf2lezuqxsb.streamlit.app/)**
+* **Try the Live App:** **https://career-compass-ai-yljtm5xusur36uesnuy7ta.streamlit.app/#bcc6ff5c **
 * **Watch the 3-Minute Video Pitch:** **[https://youtu.be/37j5secal8A?si=0ePc3OaJXJSA6l9t](https://youtu.be/37j5secal8A?si=0ePc3OaJXJSA6l9t)**
 
 ## 🎯 The Problem
