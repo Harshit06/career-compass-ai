@@ -48,7 +48,7 @@ def load_lottieurl(url: str):
 # 4. Core AI Logic
 def get_gemini_response(education, skills, interests, goals):
     # Set to 2.5 as requested
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash')
     
     prompt = f"""
     You are a Career Mentor. Analyze this profile:
@@ -141,3 +141,4 @@ if st.button("🚀 Generate My Career Path", use_container_width=True):
                 st.error("Model version 2.5 might not be active or JSON was malformed. Try using 1.5 if this persists.")
     else:
         st.warning("Please fill in all details!")
+
