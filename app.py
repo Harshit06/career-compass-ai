@@ -1,4 +1,4 @@
-[9:16 PM, 3/12/2026] Harshit Voda: import streamlit as st
+import streamlit as st
 import google.generativeai as genai
 import json
 import requests
@@ -194,3 +194,4 @@ if st.button("🚀 Generate My Roadmap", use_container_width=True):
                 st.info(f"✨ *Motivation:* {result.get('Motivation')}")
     else:
         st.warning("Please fill out all fields to generate your roadmap."
+
