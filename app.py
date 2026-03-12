@@ -62,7 +62,7 @@ def animated_title(text):
     title_placeholder.title(text)
 
 def get_gemini_response(education, skills, interests, goals):
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    model = genai.GenerativeModel('gemini-1.5-flash')
     prompt = f"""
     You are an AI-powered Personalized Career and Skills Advisor for students and professionals. Your role is to analyze the user’s profile (education, current skills, interests, and goals) and then generate a complete career guidance package. Analyze the user's profile: Education: {education}, Skills: {skills}, Interests: {interests}, Goals: {goals}. Provide the output in a structured JSON format ONLY.
     The JSON structure must be: {{"Career Paths": [{{"role": "string", "demand": "string", "avg_salary": "string", "reason": "string"}}], "Skills to Learn": [{{"name": "string", "type": "string", "resources": ["string", "string"]}}], "Learning Roadmap": {{"Short Term": ["string"], "Long Term": ["string"]}}, "Projects": {{"Beginner": ["string"], "Advanced": ["string"]}}, "Opportunities": [{{"platform": "string", "role": "string", "skill_gap": "string"}}], "Motivation": "string"}}
@@ -171,3 +171,4 @@ if submit_button:
 
     else:
         st.warning("Please fill out all the fields to generate your roadmap.", icon="⚠️")
+
