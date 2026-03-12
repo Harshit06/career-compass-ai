@@ -33,77 +33,72 @@ def add_bg():
         </style>
     """, unsafe_allow_html=True)
 
-def load_lottie(url):
-    try:
-        return requests.get(url).json()
-    except:
-        return None
-
-# --- 4. ROBUST AI LOGIC ---
+# --- 4. THE AI LOGIC (With Model Fallback) ---
 def get_guidance(edu, skl, its, gol):
-    # If 1.5 flash failed for you, we use 'gemini-pro' as a stable alternative
-    # or you can try 'gemini-1.5-flash-latest'
-    try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        
-        prompt = f"""
-        Analyze this career profile in English:
-        Education: {edu}
-        Skills: {skl}
-        Interests: {its}
-        Goals: {gol}
-        
-        Return ONLY a JSON object.
-        Structure:
-        {{
-          "Paths": [{{"role": "Title", "demand": "High", "salary": "Range", "why": "text"}}],
-          "Skills": [{{"name": "Skill", "type": "Technical"}}],
-          "Roadmap": {{"Short": ["step1"], "Long": ["step2"]}},
-          "Projects": {{"Beginner": ["P1"], "Advanced": ["P2"]}},
-          "Motivation": "Quote"
-        }}
-        """
-        
-        # Adding a request timeout to prevent the long hanging error
-        response = model.generate_content(prompt)
-        
-        if not response or not response.text:
-            return {"error": "AI returned an empty response. Try again."}
+    # List of models to try in order of preference
+    # 'gemini-2.0-flash' or 'gemini-1.5-flash-8b' are often more available
+    model_options = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-pro']
+    
+    prompt = f"""
+    Act as a Career Mentor. Provide a roadmap in English for:
+    Education: {edu}, Skills: {skl}, Interests: {its}, Goals: {gol}.
+    Return ONLY JSON:
+    {{
+      "Paths": [{{ "role": "Title", "demand": "High", "salary": "Range", "why": "Text" }}],
+      "Skills": [{{ "name": "Skill", "type": "Tech" }}],
+      "Roadmap": {{ "Short": ["Step1"], "Long": ["Step2"] }},
+      "Projects": {{ "Beginner": ["P1"], "Advanced": ["P2"] }},
+      "Motivation": "Quote"
+    }}
+    """
+
+    success = False
+    res_data = None
+    error_msg = ""
+
+    for model_name in model_options:
+        try:
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(prompt)
             
-        text = response.text.strip()
-        match = re.search(r"\{.*\}", text, re.DOTALL)
-        if match:
-            return json.loads(match.group())
-        return json.loads(text)
-        
-    except Exception as e:
-        return {"error": f"Connection Error: {str(e)}"}
+            if response and response.text:
+                text = response.text.strip()
+                match = re.search(r"\{.*\}", text, re.DOTALL)
+                if match:
+                    res_data = json.loads(match.group())
+                    success = True
+                    break
+        except Exception as e:
+            error_msg = str(e)
+            continue # Try next model if this one fails
+
+    if success:
+        return res_data
+    else:
+        return {"error": f"All models failed. Last error: {error_msg}"}
 
 # --- 5. APP UI ---
 add_bg()
-lottie_data = load_lottie("https://assets5.lottiefiles.com/packages/lf20_DMgKk1.json")
-if lottie_data:
-    st_lottie(lottie_data, height=180)
-
 st.title("🧭 Career Compass AI")
+st.write("Your AI-Powered Career Roadmap")
 
 with st.container():
     c1, c2 = st.columns(2)
     with c1:
-        u_edu = st.text_input("🎓 Education")
-        u_skl = st.text_input("💻 Skills")
+        u_edu = st.text_input("🎓 Education", placeholder="e.g. Law Student")
+        u_skl = st.text_input("💻 Skills", placeholder="e.g. Research, Public Speaking")
     with c2:
-        u_its = st.text_input("🎨 Interests")
-        u_gol = st.text_input("🎯 Goals")
+        u_its = st.text_input("🎨 Interests", placeholder="e.g. Tech Law, Robotics")
+        u_gol = st.text_input("🎯 Goals", placeholder="e.g. Legal Consultant for Tech Firms")
 
 if st.button("🚀 Generate Roadmap", use_container_width=True):
     if u_edu and u_skl and u_its and u_gol:
-        with st.spinner("Connecting to Gemini AI..."):
+        with st.spinner("Finding the best AI model for you..."):
             res = get_guidance(u_edu, u_skl, u_its, u_gol)
             
             if "error" in res:
-                st.error(f"Error: {res['error']}")
-                st.info("Tip: Check if your API Key has 'Generative Language API' enabled in Google Cloud Console.")
+                st.error(res["error"])
+                st.info("Check if 'Generative Language API' is enabled in your Google Cloud Project.")
             else:
                 st.balloons()
                 
@@ -116,14 +111,14 @@ if st.button("🚀 Generate Roadmap", use_container_width=True):
                         with cols[i % 3]:
                             card(title=p['role'], text=f"{p['demand']} Demand | {p['salary']}", 
                                  styles={"card": {"background-color": "#1E1E26", "color": "white"}})
-                            with st.expander("Details"): st.write(p['why'])
+                            with st.expander("Why?"): st.write(p['why'])
 
                 # Roadmap Tabs
                 t1, t2 = st.tabs(["🗺️ Roadmap", "🏗️ Projects"])
                 with t1:
-                    st.write("*Next 6 Months:*")
+                    st.write("*Phase 1:*")
                     for s in res.get('Roadmap', {}).get('Short', []): st.write(f"✅ {s}")
-                    st.write("*Long Term:*")
+                    st.write("*Phase 2:*")
                     for s in res.get('Roadmap', {}).get('Long', []): st.write(f"🚀 {s}")
                 with t2:
                     st.info(f"*Beginner:* {', '.join(res.get('Projects', {}).get('Beginner', []))}")
