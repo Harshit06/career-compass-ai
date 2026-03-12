@@ -6,22 +6,21 @@ import time
 from streamlit_lottie import st_lottie
 from streamlit_card import card
 
-# 1. Page Configuration
+# --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
     page_title="Career Compass AI",
     page_icon="🧭",
     layout="wide"
 )
 
-# 2. API Configuration via Secrets
-# In Streamlit Cloud: Settings -> Secrets -> GOOGLE_API_KEY = "your_key"
+# --- 2. API CONFIGURATION (Streamlit Secrets) ---
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 else:
-    st.error("Missing API Key! Please add GOOGLE_API_KEY to your Streamlit Secrets.")
+    st.error("🚨 API Key nahi mili! Streamlit Secrets mein 'GOOGLE_API_KEY' set karein.")
     st.stop()
 
-# 3. UI Styling
+# --- 3. UI STYLING & ANIMATIONS ---
 def add_animated_background():
     st.markdown("""
         <style>
@@ -35,6 +34,10 @@ def add_animated_background():
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
+        .stTextInput>div>div>input {
+            background-color: #1E1E26;
+            color: white;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -45,99 +48,133 @@ def load_lottieurl(url: str):
     except:
         return None
 
-# 4. Core AI Logic
+# --- 4. CORE AI LOGIC (Gemini 2.5 Flash) ---
 def get_gemini_response(education, skills, interests, goals):
-    # Set to 2.5 as requested
+    # Model 2.5 Flash as requested
     model = genai.GenerativeModel('gemini-2.5-flash')
     
     prompt = f"""
-    You are a Career Mentor. Analyze this profile:
-    - Education: {education}
-    - Current Skills: {skills}
-    - Interests: {interests}
-    - Career Goals: {goals}
+    You are a professional Career Advisor. Based on the following details:
+    Education: {education}
+    Skills: {skills}
+    Interests: {interests}
+    Goals: {goals}
 
-    Return ONLY a valid JSON object. No intro text, no backticks.
-    Format:
+    Generate a complete career guidance package. 
+    Return ONLY a valid JSON object. Do not use backticks or markdown formatting.
+    Structure:
     {{
-      "Career Paths": [{{"role": "Title", "demand": "High", "avg_salary": "Range", "reason": "Why"}}],
-      "Skills to Learn": [{{"name": "Skill", "type": "Technical/Soft", "resources": ["Source"]}}],
-      "Learning Roadmap": {{"Short Term": ["Step 1"], "Long Term": ["Step 2"]}},
-      "Projects": {{"Beginner": ["P1"], "Advanced": ["P2"]}},
-      "Opportunities": [{{"platform": "Name", "role": "Type", "skill_gap": "Gap"}}],
-      "Motivation": "Quote"
+      "Career Paths": [
+        {{"role": "Job Title", "demand": "High/Med", "avg_salary": "Range", "reason": "Why this fits"}}
+      ],
+      "Skills to Learn": [
+        {{"name": "Skill", "type": "Technical/Soft", "resources": ["Resource Name"]}}
+      ],
+      "Learning Roadmap": {{
+        "Short Term": ["Step 1", "Step 2"],
+        "Long Term": ["Step 3", "Step 4"]
+      }},
+      "Projects": {{
+        "Beginner": ["Project A"],
+        "Advanced": ["Project B"]
+      }},
+      "Opportunities": [
+        {{"platform": "Website", "role": "Position", "skill_gap": "What to learn"}}
+      ],
+      "Motivation": "Inspirational Quote"
     }}
     """
     
-    response = model.generate_content(prompt)
-    text = response.text.strip()
-    
-    # Handle case where model returns markdown blocks
-    if "json" in text:
-        text = text.split("json")[1].split("")[0].strip()
-    elif "" in text:
-        text = text.split("")[1].split("")[0].strip()
+    try:
+        response = model.generate_content(prompt)
+        text = response.text.strip()
         
-    return text
+        # Clean JSON if model returns markdown
+        if "json" in text:
+            text = text.split("json")[1].split("")[0].strip()
+        elif "" in text:
+            text = text.split("")[1].split("")[0].strip()
+            
+        return json.loads(text)
+    except Exception as e:
+        return {"error": f"AI Error: {str(e)}"}
 
-# --- App Layout ---
+# --- 5. MAIN APP INTERFACE ---
 add_animated_background()
 
-lottie_json = load_lottieurl("https://assets5.lottiefiles.com/packages/lf20_DMgKk1.json")
-if lottie_json:
-    st_lottie(lottie_json, height=180, key="main_anim")
+# Animation Header
+lottie_anim = load_lottieurl("https://assets5.lottiefiles.com/packages/lf20_DMgKk1.json")
+if lottie_anim:
+    st_lottie(lottie_anim, height=200, key="header")
 
 st.title("🧭 Career Compass AI")
-st.write("Navigating your professional future with Gemini 2.5")
+st.markdown("### Build your future with Gemini 2.5 Intelligence")
 
+# Input Section
 with st.container():
-    c1, c2 = st.columns(2)
-    with c1:
-        education = st.text_input("🎓 Your Education", placeholder="e.g. B.Tech Computer Science")
-        skills = st.text_input("💻 Current Skills", placeholder="e.g. Java, Python, SQL")
-    with c2:
-        interests = st.text_input("🎨 Your Interests", placeholder="e.g. App Dev, AI, Design")
-        goals = st.text_input("🎯 Your Goals", placeholder="e.g. Work at a Tech Giant")
+    st.markdown("#### Apni Details Bhariye:")
+    col1, col2 = st.columns(2)
+    with col1:
+        edu = st.text_input("🎓 Education", placeholder="e.g. B.Tech CS, BCA, MBA")
+        skl = st.text_input("💻 Current Skills", placeholder="e.g. Python, Excel, Marketing")
+    with col2:
+        its = st.text_input("🎨 Interests", placeholder="e.g. Data Science, Gaming, Writing")
+        gol = st.text_input("🎯 Career Goals", placeholder="e.g. Remote Job in MNC")
 
+# Execution
 if st.button("🚀 Generate My Career Path", use_container_width=True):
-    if all([education, skills, interests, goals]):
-        with st.spinner("Processing your path..."):
-            try:
-                res_text = get_gemini_response(education, skills, interests, goals)
-                data = json.loads(res_text)
-                
+    if all([edu, skl, its, gol]):
+        with st.spinner("AI aapke liye best options dhund raha hai..."):
+            data = get_gemini_response(edu, skl, its, gol)
+            
+            if "error" in data:
+                st.error(data["error"])
+            else:
                 st.balloons()
                 
-                # --- Career Display ---
-                st.header("🎯 Recommended Paths")
+                # --- Career Path Cards ---
+                st.subheader("🎯 Recommended Career Paths")
                 paths = data.get("Career Paths", [])
                 cols = st.columns(len(paths) if 0 < len(paths) <= 3 else 3)
-                for i, path in enumerate(paths):
-                    with cols[i % 3]:
+                for idx, path in enumerate(paths):
+                    with cols[idx % 3]:
                         card(
                             title=path['role'],
-                            text=f"{path['demand']} Demand | {path['avg_salary']}",
-                            styles={"card": {"background-color": "#1E1E26", "color": "white"}}
+                            text=f"Demand: {path['demand']} | Salary: {path['avg_salary']}",
+                            styles={"card": {"background-color": "#262730", "color": "#FAFAFA", "border-radius": "15px"}}
                         )
+                        with st.expander("Kyu ye path?"):
+                            st.write(path['reason'])
+
+                # --- Detailed Roadmap Tabs ---
+                st.divider()
+                tab1, tab2, tab3 = st.tabs(["🗺️ Roadmap", "🏗️ Projects", "💼 Jobs"])
                 
-                # --- Roadmap Tabs ---
-                tab1, tab2 = st.tabs(["📚 Roadmap", "🏗️ Projects"])
                 with tab1:
-                    st.subheader("Your Learning Journey")
-                    st.write("*Phase 1 (Short Term):*")
-                    for item in data['Learning Roadmap']['Short Term']: st.write(f"🔹 {item}")
-                    st.write("*Phase 2 (Long Term):*")
-                    for item in data['Learning Roadmap']['Long Term']: st.write(f"🚀 {item}")
-                
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        st.markdown("### 🛠️ Skills to Acquire")
+                        for s in data.get("Skills to Learn", []):
+                            st.write(f"✅ *{s['name']}* ({s['type']})")
+                    with c2:
+                        st.markdown("### 🗺️ Timeline")
+                        st.write("*Next 6 Months:*")
+                        for step in data['Learning Roadmap']['Short Term']: st.write(f"🔹 {step}")
+                        st.write("*Next 2 Years:*")
+                        for step in data['Learning Roadmap']['Long Term']: st.write(f"🚀 {step}")
+
                 with tab2:
-                    st.subheader("Hands-on Projects")
-                    st.info(f"*Try these first:* {', '.join(data['Projects']['Beginner'])}")
-                    st.success(f"*Final Boss Level:* {', '.join(data['Projects']['Advanced'])}")
+                    st.markdown("### 🚀 Portfolio Builders")
+                    st.info(f"*Beginner:* {', '.join(data['Projects']['Beginner'])}")
+                    st.success(f"*Advanced:* {', '.join(data['Projects']['Advanced'])}")
+
+                with tab3:
+                    st.markdown("### 🌍 Job Opportunities")
+                    for opp in data.get("Opportunities", []):
+                        st.write(f"📍 *{opp['role']}* on {opp['platform']}")
+                        st.caption(f"Gap to fill: {opp['skill_gap']}")
 
                 st.divider()
-                st.write(f"✨ *Inspiration:* {data.get('Motivation')}")
-
-            except Exception as e:
-                st.error("Model version 2.5 might not be active or JSON was malformed. Try using 1.5 if this persists.")
+                st.info(f"✨ *Motivation:* {data.get('Motivation')}")
     else:
-        st.warning("Please fill in all details!")
+        st.warning("Saari details bharna zaroori hai!")
